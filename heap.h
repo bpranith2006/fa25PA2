@@ -3,8 +3,8 @@
 #ifndef HEAP_H
 #define HEAP_H
 
-// Simple array min-heap that stores NODE INDICES.
-// Comparisons are done using the external weightArr[] passed in.
+// Array min-heap storing NODE INDICES.
+// Comparisons use the external weightArr[] passed in.
 struct MinHeap {
     int data[64];
     int size;

@@ -7,17 +7,17 @@
 #include "heap.h"
 using namespace std;
 
-// Global arrays for node information
+// Parallel arrays for the encoding tree (array-based, no dynamic alloc)
 const int MAX_NODES = 64;
 int weightArr[MAX_NODES];
 int leftArr[MAX_NODES];
 int rightArr[MAX_NODES];
 char charArr[MAX_NODES];
 
-// Function prototypes
+// Prototypes
 void buildFrequencyTable(int freq[], const string& filename);
-int createLeafNodes(int freq[]);
-int buildEncodingTree(int nextFree);
+int  createLeafNodes(int freq[]);
+int  buildEncodingTree(int nextFree);
 void generateCodes(int root, string codes[]);
 void encodeMessage(const string& filename, string codes[]);
 
@@ -39,13 +39,12 @@ int main() {
     // 3) greedy combine with min-heap → internal nodes up to single root
     int root = buildEncodingTree(nextFree);
 
-    // 4) iterative DFS with stack assigns 0/1 strings
+    // 4) iterative DFS with stack assigns 0/1 strings (no recursion)
     string codes[26];
     generateCodes(root, codes);
 
     // 5) print code table and encoded bits
     encodeMessage("input.txt", codes);
-
     return 0;
 }
 
@@ -63,13 +62,8 @@ void buildFrequencyTable(int freq[], const string& filename) {
 
     char ch;
     while (file.get(ch)) {
-        // Convert uppercase to lowercase
-        if (ch >= 'A' && ch <= 'Z')
-            ch = ch - 'A' + 'a';
-
-        // Count only lowercase letters
-        if (ch >= 'a' && ch <= 'z')
-            freq[ch - 'a']++;
+        if (ch >= 'A' && ch <= 'Z') ch = ch - 'A' + 'a';
+        if (ch >= 'a' && ch <= 'z') freq[ch - 'a']++;
     }
     file.close();
 
@@ -185,8 +179,7 @@ void encodeMessage(const string& filename, string codes[]) {
 
     char ch;
     while (file.get(ch)) {
-        if (ch >= 'A' && ch <= 'Z')
-            ch = ch - 'A' + 'a';
+        if (ch >= 'A' && ch <= 'Z') ch = ch - 'A' + 'a';
         if (ch >= 'a' && ch <= 'z') {
             const string &code = codes[ch - 'a'];
             if (!code.empty()) cout << code; // skip letters not in table
