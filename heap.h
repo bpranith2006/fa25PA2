@@ -1,6 +1,4 @@
-//
 // Created by Manju Muralidharan on 10/19/25.
-//
 
 #ifndef HEAP_H
 #define HEAP_H
@@ -30,6 +28,7 @@ struct MinHeap {
     }
 
     void upheap(int pos, int weightArr[]) {
+        // bubble up while child < parent
         while (pos > 0) {
             int p = (pos - 1) / 2;
             if (weightArr[data[pos]] < weightArr[data[p]]) {
@@ -40,6 +39,7 @@ struct MinHeap {
     }
 
     void downheap(int pos, int weightArr[]) {
+        // bubble down while parent > any child
         while (true) {
             int l = 2 * pos + 1;
             int r = 2 * pos + 2;

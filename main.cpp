@@ -1,4 +1,3 @@
-//
 // Created by Manju Muralidharan on 10/19/25.
 //
 #include <iostream>
@@ -25,27 +24,33 @@ void encodeMessage(const string& filename, string codes[]);
 int main() {
     int freq[26] = {0};
 
-    // Step 1: Read file and count letter frequencies
+    // 1) scan file and count letters (case-insensitive)
     buildFrequencyTable(freq, "input.txt");
 
-    // Step 2: Create leaf nodes for each character with nonzero frequency
+    // 2) create leaves in parallel arrays
     int nextFree = createLeafNodes(freq);
 
-    // Step 3: Build encoding tree using your heap
+    // Early exit if no letters (avoids building/traversing an empty tree)
+    if (nextFree == 0) {
+        cout << "No alphabetic characters found in input.\n";
+        return 0;
+    }
+
+    // 3) greedy combine with min-heap → internal nodes up to single root
     int root = buildEncodingTree(nextFree);
 
-    // Step 4: Generate binary codes using an STL stack
+    // 4) iterative DFS with stack assigns 0/1 strings
     string codes[26];
     generateCodes(root, codes);
 
-    // Step 5: Encode the message and print output
+    // 5) print code table and encoded bits
     encodeMessage("input.txt", codes);
 
     return 0;
 }
 
 /*------------------------------------------------------
-    Function Definitions (Students will complete logic)
+    Function Definitions
   ------------------------------------------------------*/
 
 // Step 1: Read file and count frequencies
@@ -74,12 +79,18 @@ void buildFrequencyTable(int freq[], const string& filename) {
 // Step 2: Create leaf nodes for each character
 int createLeafNodes(int freq[]) {
     int nextFree = 0;
+
+    // Build leaf nodes for chars that appear at least once
     for (int i = 0; i < 26; ++i) {
         if (freq[i] > 0) {
-            charArr[nextFree] = 'a' + i;
+            if (nextFree >= MAX_NODES) { // keep arrays safe
+                cerr << "Error: node limit exceeded.\n";
+                exit(1);
+            }
+            charArr[nextFree]   = 'a' + i;
             weightArr[nextFree] = freq[i];
-            leftArr[nextFree] = -1;
-            rightArr[nextFree] = -1;
+            leftArr[nextFree]   = -1;
+            rightArr[nextFree]  = -1;
             nextFree++;
         }
     }
@@ -90,36 +101,36 @@ int createLeafNodes(int freq[]) {
 // Step 3: Build the encoding tree using heap operations
 int buildEncodingTree(int nextFree) {
     if (nextFree == 0) return -1; // no letters
-    if (nextFree == 1) return 0;  // single letter -> that leaf is root
+    if (nextFree == 1) return 0;  // single letter → that leaf is root
 
-    MinHeap heap;
+    MinHeap hp;
 
-    // Push all leaf node indices into the heap.
-    for (int i = 0; i < nextFree; ++i) {
-        heap.push(i, weightArr);
-    }
+    // push all leaf indices [0..nextFree-1]
+    for (int i = 0; i < nextFree; ++i) hp.push(i, weightArr);
 
-    // Combine two smallest subtrees until one root remains.
-    while (heap.size > 1) {
-        int left = heap.pop(weightArr);
-        int right = heap.pop(weightArr);
+    // combine until one node remains
+    while (hp.size > 1) {
+        // get two smallest subtrees
+        int a = hp.pop(weightArr);
+        int b = hp.pop(weightArr);
 
         if (nextFree >= MAX_NODES) {
             cerr << "Error: node limit exceeded.\n";
             exit(1);
         }
 
+        // create internal parent
         int parent = nextFree++;
-        charArr[parent]  = '\0'; // internal node
-        leftArr[parent]  = left;
-        rightArr[parent] = right;
-        weightArr[parent] = weightArr[left] + weightArr[right];
+        charArr[parent]   = '\0'; // internal marker
+        leftArr[parent]   = a;
+        rightArr[parent]  = b;
+        weightArr[parent] = weightArr[a] + weightArr[b];
 
-        heap.push(parent, weightArr);
+        hp.push(parent, weightArr);
     }
 
-    // Return the index of the last remaining node (root)
-    return heap.pop(weightArr);
+    // final root
+    return hp.pop(weightArr);
 }
 
 // Step 4: Use an STL stack to generate codes
@@ -149,7 +160,7 @@ void generateCodes(int root, string codes[]) {
                 codes[c - 'a'] = code;
             }
         } else {
-            // Right gets '1', Left gets '0'. Order doesn’t matter for validity.
+            // Right gets '1', Left gets '0'. Order doesn’t affect validity.
             if (rightArr[u] != -1) st.push({ rightArr[u], path + "1" });
             if (leftArr[u]  != -1) st.push({ leftArr[u],  path + "0" });
         }
@@ -167,12 +178,19 @@ void encodeMessage(const string& filename, string codes[]) {
     cout << "\nEncoded message:\n";
 
     ifstream file(filename);
+    if (!file.is_open()) {
+        cerr << "Error: could not open " << filename << "\n";
+        return;
+    }
+
     char ch;
     while (file.get(ch)) {
         if (ch >= 'A' && ch <= 'Z')
             ch = ch - 'A' + 'a';
-        if (ch >= 'a' && ch <= 'z')
-            cout << codes[ch - 'a'];
+        if (ch >= 'a' && ch <= 'z') {
+            const string &code = codes[ch - 'a'];
+            if (!code.empty()) cout << code; // skip letters not in table
+        }
     }
     cout << "\n";
     file.close();
